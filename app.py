@@ -58,13 +58,13 @@ def summarize_text(text, level="Basic"):
     )
     return summary[0]["summary_text"]
 
-# --- Cleanup ---
+
 def cleanup_models():
     st.session_state.pop("qa_pipeline", None)
     st.session_state.pop("summarizer", None)
     torch.cuda.empty_cache()
 
-# --- Session Defaults ---
+
 # sourcery skip: use-named-expression
 for key, val in {
     "history": ChatHistory.get_all_chats(),
@@ -79,7 +79,7 @@ for key, val in {
 
 load_models()
 
-# --- Custom Styling + Animations ---
+
 st.markdown("""
     <style>
     .stChatMessage { padding: 12px; }
@@ -139,14 +139,14 @@ with st.sidebar:
         cleanup_models()
         st.success("Memory freed!")
 
-# --- Header ---
+
 st.header("🤖 EduMate Assistant")
 
 # --- Upload & Summarize ---
 uploaded_file = st.file_uploader("📎 Upload PDF/Image", type=["pdf", "jpg", "png", "jpeg"])
 if uploaded_file:
     text = extract_text_from_pdf(uploaded_file) if uploaded_file.type == "application/pdf" else extract_text_from_image(uploaded_file)
-    st.session_state.smart_context = text  # Save for smart suggestions
+    st.session_state.smart_context = text  
 
     if st.button("📝 Summarize"):
         with st.spinner("🔍 Analyzing document..."):

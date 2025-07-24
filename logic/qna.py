@@ -1,10 +1,21 @@
 import os
+import streamlit as st
 
 os.environ["HF_HUB_DOWNLOAD_TIMEOUT"] = "1000"
 from transformers import pipeline
 
-doc_qa = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
-general_qa = pipeline("text2text-generation", model="google/flan-t5-large")
+
+@st.cache_resource
+def get_doc_qa():
+    return pipeline("question-answering", model="deepset/tinyroberta-squad2")
+
+doc_qa = get_doc_qa()
+
+@st.cache_resource
+def get_general_qa():
+    return pipeline("text2text-generation", model="google/flan-t5-small")
+
+general_qa = get_general_qa()
 
 
 def ask_about_document(question, context):
