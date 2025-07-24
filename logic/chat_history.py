@@ -92,7 +92,7 @@ class ChatHistory:
             conn.commit()
 
     @staticmethod
-    def update_chat(chat_id: str, **updates):
+    def update_chat(chat_id: str, **updates):  # sourcery skip: merge-list-appends-into-extend, remove-dict-keys
         if not updates:
             return
         set_clause = ", ".join(f"{k} = ?" for k in updates.keys())

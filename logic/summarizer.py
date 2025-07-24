@@ -9,7 +9,7 @@ pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tessera
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
 
-def extract_text_from_pdf(uploaded_file):
+def extract_text_from_pdf(uploaded_file):  # sourcery skip: use-named-expression
     text = ""
     with pdfplumber.open(uploaded_file) as pdf:
         for page in pdf.pages:
@@ -32,6 +32,7 @@ def summarize_text(text):
     ]
 
 
+# sourcery skip: use-fstring-for-concatenation, use-named-expression
 st.title("EduMate Document Summarizer")
 
 uploaded_file = st.file_uploader(

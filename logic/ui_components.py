@@ -1,8 +1,6 @@
 import uuid
 from datetime import datetime
-
 import streamlit as st
-
 
 def chat_message_ui(chat, is_user=True):
     with st.chat_message("user" if is_user else "assistant"):
@@ -26,20 +24,43 @@ def chat_message_ui(chat, is_user=True):
                 st.toast("", icon="📌")
 
 
-def sidebar_chat_history_ui(chat_list):
+def sidebar_chat_history_ui(chat_list):  # sourcery skip: use-named-expression
     st.sidebar.subheader("📚 Chat History")
 
-    pinned_chats = [c for c in chat_list if c.get("pinned")]
+    # 🔍 Search bar
+    search_query = st.sidebar.text_input("Search chats...", key="search_chats")
+    filtered_chats = [
+        c for c in chat_list if search_query.lower() in c["title"].lower()
+    ] if search_query else chat_list
+
+    pinned_chats = [c for c in filtered_chats if c.get("pinned")]
     if pinned_chats:
         st.sidebar.subheader("📌 Pinned")
         for chat in pinned_chats:
             render_chat_item(chat)
 
-    recent_chats = [c for c in chat_list if not c.get("pinned")]
+    recent_chats = [c for c in filtered_chats if not c.get("pinned")]
     if recent_chats:
         st.sidebar.subheader("⏱️ Recent")
         for chat in recent_chats:
             render_chat_item(chat)
+
+    st.sidebar.markdown("---")
+
+    # 🌙 Dark mode toggle
+    dark_mode = st.sidebar.toggle("🌙 Dark Mode", key="dark_mode")
+    if dark_mode:
+        st.markdown(
+            """
+            <style>
+                body { background-color: #0e1117; color: #ffffff; }
+                .stButton>button, .stTextInput>div>input {
+                    background-color: #333333; color: white;
+                }
+                .stChatMessage { background-color: #1e1e1e; }
+            </style>
+            """, unsafe_allow_html=True
+        )
 
 
 def render_chat_item(chat):
@@ -73,7 +94,7 @@ def chat_options_modal(chat_id):
 
 
 def user_input_ui(pause_key="pause"):
-    col1, col2, col3 = st.columns([0.8, 0.1, 0.1])
+    col1, col2, col3 = st.columns([0.7, 0.15, 0.15])
     with col1:
         user_input = st.text_input(
             "Ask or type...", key="user_input", label_visibility="collapsed"
