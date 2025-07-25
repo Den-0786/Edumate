@@ -11,15 +11,15 @@ def chat_message_ui(chat, is_user=True):
 
         cols = st.columns([0.1, 0.1, 0.1])
         with cols[0]:
-            if st.button("✏️", key=f"edit-{chat['id']}"):
+            if st.button("✏️", key=f"edit-{chat['id']}-{is_user}", help="Edit this message"):
                 st.session_state["edit_mode"] = chat["id"]
                 st.toast("", icon="✏️")
         with cols[1]:
-            if st.button("📋", key=f"copy-{chat['id']}"):
+            if st.button("📋", key=f"copy-{chat['id']}-{is_user}", help="Copy this message"):
                 st.code(chat["message"], language="markdown")
                 st.toast("", icon="📋")
         with cols[2]:
-            if st.button("📌", key=f"pin-{chat['id']}"):
+            if st.button("📌", key=f"pin-{chat['id']}-{is_user}", help="Pin this chat"):
                 st.session_state["pin_chat"] = chat["id"]
                 st.toast("", icon="📌")
 
@@ -33,13 +33,14 @@ def sidebar_chat_history_ui(chat_list):  # sourcery skip: use-named-expression
         c for c in chat_list if search_query.lower() in c["title"].lower()
     ] if search_query else chat_list
 
-    pinned_chats = [c for c in filtered_chats if c.get("pinned")]
+    seen_ids = set()
+    pinned_chats = [c for c in filtered_chats if c.get("pinned") and c["id"] not in seen_ids and not seen_ids.add(c["id"])]
     if pinned_chats:
         st.sidebar.subheader("📌 Pinned")
         for chat in pinned_chats:
             render_chat_item(chat)
 
-    recent_chats = [c for c in filtered_chats if not c.get("pinned")]
+    recent_chats = [c for c in filtered_chats if not c.get("pinned") and c["id"] not in seen_ids and not seen_ids.add(c["id"])]
     if recent_chats:
         st.sidebar.subheader("⏱️ Recent")
         for chat in recent_chats:
@@ -47,50 +48,38 @@ def sidebar_chat_history_ui(chat_list):  # sourcery skip: use-named-expression
 
     st.sidebar.markdown("---")
 
-    # 🌙 Dark mode toggle
-    dark_mode = st.sidebar.toggle("🌙 Dark Mode", key="dark_mode")
-    if dark_mode:
-        st.markdown(
-            """
-            <style>
-                body { background-color: #0e1117; color: #ffffff; }
-                .stButton>button, .stTextInput>div>input {
-                    background-color: #333333; color: white;
-                }
-                .stChatMessage { background-color: #1e1e1e; }
-            </style>
-            """, unsafe_allow_html=True
-        )
-
 
 def render_chat_item(chat):
     cols = st.sidebar.columns([0.7, 0.15, 0.15])
     with cols[0]:
         if st.button(f"💬 {chat['title']}", key=f"load-{chat['id']}"):
             st.session_state["active_chat_id"] = chat["id"]
-            st.toast("", icon="📂")
+            st.toast("Chat loaded!", icon="📂")
     with cols[1]:
         if st.button("📌", key=f"sidebar-pin-{chat['id']}"):
             st.session_state["pin_chat"] = chat["id"]
     with cols[2]:
         if st.button("⋮", key=f"menu-{chat['id']}"):
             st.session_state["show_menu_for"] = chat["id"]
-
-
-def chat_options_modal(chat_id):
-    with st.modal("Chat Options", key=f"modal-{chat_id}"):
-        st.write("What would you like to do?")
-        if st.button("✏️ Edit Chat Title"):
-            st.session_state["edit_title_for"] = chat_id
-            st.toast("", icon="✏️")
-        if st.button("🗑️ Delete Chat"):
-            st.session_state["delete_chat"] = chat_id
-            st.toast("", icon="🗑️")
-        if st.button("📌 Pin/Unpin"):
-            st.session_state["pin_chat"] = chat_id
-            st.toast("", icon="📌")
-        if st.button("✕ Close"):
-            st.session_state.pop("show_menu_for", None)
+    
+    if st.session_state.get("show_menu_for") == chat["id"]:
+        with st.expander("Chat Options", expanded=True):
+            st.markdown("<div style='font-size: 0.9em;'>", unsafe_allow_html=True)
+            if st.button("✏️ Edit Chat Title", key=f"edit-title-{chat['id']}", help="Edit the title of this chat"):
+                st.session_state["edit_title_for"] = chat["id"]
+                st.session_state["show_menu_for"] = None
+                st.toast("Edit mode enabled!", icon="✏️")
+            if st.button("🗑️ Delete Chat", key=f"delete-chat-{chat['id']}", help="Delete this chat"):
+                st.session_state["delete_chat"] = chat["id"]
+                st.session_state["show_menu_for"] = None
+                st.toast("Chat deleted!", icon="🗑️")
+            if st.button("📌 Pin/Unpin", key=f"pin-chat-{chat['id']}", help="Pin or unpin this chat"):
+                st.session_state["pin_chat"] = chat["id"]
+                st.session_state["show_menu_for"] = None
+                st.toast("Pin toggled!", icon="📌")
+            if st.button("✕ Close", key=f"close-modal-{chat['id']}", help="Close this menu"):
+                st.session_state["show_menu_for"] = None
+            st.markdown("</div>", unsafe_allow_html=True)
 
 
 def user_input_ui(pause_key="pause"):
@@ -100,10 +89,12 @@ def user_input_ui(pause_key="pause"):
             "Ask or type...", key="user_input", label_visibility="collapsed"
         )
     with col2:
-        if st.button("📎", key="attach"):
+        if st.button("📎", key="attach", help="Attach a file"):
             st.session_state["attach_mode"] = True
     with col3:
-        if st.button("⏸️", key=pause_key):
-            st.session_state["paused"] = not st.session_state.get("paused", False)
-            st.toast("", icon="⏸️")
+        paused = st.session_state.get("paused", False)
+        if st.button("⏸️" if not paused else "▶️", key=pause_key, help="Pause" if not paused else "Resume"):
+            st.session_state["paused"] = not paused
+            st.toast("Paused!" if not paused else "Resumed!", icon="⏸️" if not paused else "▶️")
+            st.experimental_rerun()
     return user_input
